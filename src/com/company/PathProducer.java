@@ -1,5 +1,6 @@
 package com.company;
 
+import java.lang.Runtime;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,31 +18,39 @@ import java.util.zip.ZipInputStream;
  * Created by cameronphillips on 1/22/17.
  */
 public class PathProducer implements Runnable{
-    private final BlockingQueue<Path> queue;
+    private final BlockingQueue<Message> newQueue;
     private final String root;
     private final List<Path> toDelete;
 
     PathProducer(BlockingQueue q, String path){
-        queue = q;
+        newQueue = q;
         root = path;
         toDelete = new ArrayList<>();
+
+        //register shutdown hook to clean up temporary unzipped directories
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            public void run() {
+                toDelete.forEach((pathToDelete) -> System.out.println(pathToDelete));
+            }
+        });
     }
 
     @Override
     public void run() {
         traverseTree(root);
-        //wait for notify by map merger
-        //produce(null);
+        //after fully traversing, send poison to indicate processing is complete and to shutdown
+        final Message poison = new Message(true, null);
+        produce(poison);
+        //print out
     }
 
-    private void produce(Path path) {
+    private void produce(Message message) {
         try{
-            queue.put(path);
+            newQueue.put(message);
         }catch (InterruptedException e){
             System.err.println(e);
         }
     }
-
 
     private void traverseTree(String root) {
         //boolean function that can be utilized by lambda expression
@@ -73,7 +82,8 @@ public class PathProducer implements Runnable{
             }
         }else if(path.toString().endsWith(".txt")){
             //insert into producer queue
-            produce(path);
+            final Message msg = new Message(false, path);
+            produce(msg);
         }
     }
 
@@ -108,3 +118,4 @@ public class PathProducer implements Runnable{
         return tDirect.toString();
     }
 }
+

@@ -12,8 +12,8 @@ import java.util.stream.Stream;
 public class MapMerger implements Runnable{
 
     private Map<String, Long> merged;
-    private final BlockingQueue<Map<String, Long>> incomingMaps;
-    public MapMerger(BlockingQueue<Map<String, Long>> inq){
+    private final BlockingQueue<Message> incomingMaps;
+    public MapMerger(BlockingQueue<Message> inq){
         merged = new HashMap<>();
         incomingMaps = inq;
     }
@@ -30,9 +30,9 @@ public class MapMerger implements Runnable{
     }
 
     //takes maps from queue and merges them with running merged map of all maps
-    void consume (Map<String, Long> toBeMerged){
-        if(toBeMerged != null){
-            merged = Stream.concat(toBeMerged.entrySet().stream(), merged.entrySet().stream())
+    private void consume (Message toBeMerged){
+        if(!toBeMerged.isPoison()){
+            merged = Stream.concat(toBeMerged.getText().entrySet().stream(), merged.entrySet().stream())
                     .collect(Collectors.toMap(
                             //the key
                             entry -> entry.getKey(),
@@ -52,8 +52,14 @@ public class MapMerger implements Runnable{
         return merged;
      }
 
+     void shutdown(){
+        //0 indicates normal shutdown
+        System.exit(0);
+     }
+
      void printHistogram(){
          merged.forEach((k, v) -> System.out.println(String.format("%s ==>> %d", k, v)));
+         shutdown();
      }
 
 }

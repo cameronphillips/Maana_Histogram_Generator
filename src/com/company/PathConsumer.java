@@ -1,7 +1,6 @@
 package com.company;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.nio.file.Files;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Arrays;
@@ -12,24 +11,23 @@ import java.util.concurrent.BlockingQueue;
 import static java.util.stream.Collectors.counting;
 import static java.util.stream.Collectors.groupingBy;
 
-
 /**
  * Created by cameronphillips on 1/22/17.
  */
 public class PathConsumer implements Runnable{
-    private final BlockingQueue<Path> queue;
-    private final BlockingQueue<Map<String, Long>> outgoingMaps;
+    private final BlockingQueue<Message> newQueue;
+    private final BlockingQueue<Message> newOutgoing;
 
-    PathConsumer(BlockingQueue<Path> q, BlockingQueue<Map<String, Long>> out){
-        queue = q;
-        outgoingMaps = out;
+    PathConsumer(BlockingQueue<Message> q, BlockingQueue<Message> out){
+        newQueue = q;
+        newOutgoing = out;
     }
 
     @Override
     public void run() {
         try {
             while(true){
-                consume(queue.take());
+                consume(newQueue.take());
             }
         } catch (InterruptedException e) {
             System.err.println(e);
@@ -37,14 +35,12 @@ public class PathConsumer implements Runnable{
     }
 
     //receives a path of a text file from the queue, extracts and counts all of the words within it
-    void consume(Path path) throws InterruptedException{
-//        System.out.println(Thread.currentThread().getName() + " Analyzing: " + path.toString());
-        if(path != null){
+    void consume(Message message) throws InterruptedException{
+        if(!message.isPoison()){
             Map<String, Long> wordCount = new HashMap<>();
-            //TODO MAKE TRY WITH RESOURCES BLOCK!
             try{
                 //Regex s is a whitespace character, or a space, tab, carriage return, new line, vertical tab, or form feed
-                wordCount = Files.lines(path)
+                wordCount = Files.lines(message.getPath())
                         .flatMap(line -> Arrays.stream(line.trim().split("\\s")))
                         .map(word -> word.replaceAll("[^a-zA-Z]", "").toLowerCase(Locale.ROOT).trim())
                         .filter(word -> word.length() > 0)
@@ -54,10 +50,12 @@ public class PathConsumer implements Runnable{
                 System.err.println(e);
             }
 
-            //wordCount.forEach((k, v) -> System.out.println(String.format("%s ==>> %d", k, v)));
-            outgoingMaps.put(wordCount);
+            message.setText(wordCount);
+            newOutgoing.put(message);
         }else{
-            outgoingMaps.put(null);
+            //if the message is poison there is no more processing to be done,
+            //send it along to the next consumer (map merger in this case)
+            newOutgoing.put(message);
         }
     }
 }
