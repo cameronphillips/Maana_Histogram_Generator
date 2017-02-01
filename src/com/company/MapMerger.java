@@ -11,10 +11,10 @@ import java.util.stream.Stream;
  */
 public class MapMerger implements Runnable{
 
-    private Map<String, Long> merged;
+    private Map<String, Long> histogram;
     private final BlockingQueue<Message> incomingMaps;
     public MapMerger(BlockingQueue<Message> inq){
-        merged = new HashMap<>();
+        histogram = new HashMap<>();
         incomingMaps = inq;
     }
 
@@ -29,10 +29,11 @@ public class MapMerger implements Runnable{
         }
     }
 
-    //takes maps from queue and merges them with running merged map of all maps
+    //takes maps from queue and merges them with running histogram map of all maps
     private void consume (Message toBeMerged){
         if(!toBeMerged.isPoison()){
-            merged = Stream.concat(toBeMerged.getText().entrySet().stream(), merged.entrySet().stream())
+            //
+            histogram = Stream.concat(toBeMerged.getText().entrySet().stream(), histogram.entrySet().stream())
                     .collect(Collectors.toMap(
                             //the key
                             entry -> entry.getKey(),
@@ -44,12 +45,13 @@ public class MapMerger implements Runnable{
                     ));
         }else{
             printHistogram();
+            shutdown();
         }
 
     }
 
      public Map<String, Long> getfinalMergedMap() {
-        return merged;
+        return histogram;
      }
 
      void shutdown(){
@@ -58,8 +60,7 @@ public class MapMerger implements Runnable{
      }
 
      void printHistogram(){
-         merged.forEach((k, v) -> System.out.println(String.format("%s ==>> %d", k, v)));
-         shutdown();
+         histogram.forEach((k, v) -> System.out.println(String.format("%s ==>> %d", k, v)));
      }
 
 }

@@ -30,7 +30,7 @@ public class PathProducer implements Runnable{
         //register shutdown hook to clean up temporary unzipped directories
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
-                toDelete.forEach((pathToDelete) -> System.out.println(pathToDelete));
+                toDelete.forEach((pathToDelete) -> pathToDelete.toFile().delete());
             }
         });
     }
