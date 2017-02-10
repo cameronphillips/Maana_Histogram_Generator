@@ -1,5 +1,7 @@
 package com.company;
 
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
@@ -18,6 +20,7 @@ public class MapMerger implements Runnable{
         incomingMaps = inq;
     }
 
+
     @Override
     public void run(){
         try {
@@ -25,14 +28,15 @@ public class MapMerger implements Runnable{
                 consume(incomingMaps.take());
             }
         } catch (InterruptedException e) {
-            System.err.println(e);
+            e.printStackTrace();
         }
     }
 
     //takes maps from queue and merges them with running histogram map of all maps
     private void consume (Message toBeMerged){
         if(!toBeMerged.isPoison()){
-            //
+
+
             histogram = Stream.concat(toBeMerged.getText().entrySet().stream(), histogram.entrySet().stream())
                     .collect(Collectors.toMap(
                             //the key
@@ -60,7 +64,14 @@ public class MapMerger implements Runnable{
      }
 
      void printHistogram(){
-         histogram.forEach((k, v) -> System.out.println(String.format("%s ==>> %d", k, v)));
+         //find the longest word in the histogram to properly pad output
+         int longestWord = histogram.entrySet().stream()
+                 .map(entry -> entry.getKey().length())
+                 .reduce(0, (a, b) -> Integer.max(a, b));
+
+         histogram.entrySet().stream()
+                .sorted(Comparator.comparing(Map.Entry::getKey))
+                .forEach((entry) -> System.out.println(String.format("%"+longestWord+"s ==>> %d", entry.getKey(), entry.getValue())));
      }
 
 }

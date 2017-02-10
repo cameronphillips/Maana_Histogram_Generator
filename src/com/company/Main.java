@@ -5,7 +5,6 @@ import java.util.concurrent.SynchronousQueue;
 
 public class Main {
 
-
     public static void main(String[] args) {
 
         String root;
@@ -22,6 +21,9 @@ public class Main {
         }else{
             root = args[0];
         }
+
+
+
 
         PathProducer directoryWalker = new PathProducer(producerToConsumer, root);
         PathConsumer textAnalyzer = new PathConsumer(producerToConsumer, consumerToMerger);

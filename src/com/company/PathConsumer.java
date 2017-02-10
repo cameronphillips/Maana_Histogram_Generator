@@ -1,7 +1,11 @@
 package com.company;
 
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.nio.file.Files;
+import java.io.Reader;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
+import java.nio.charset.*;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -17,11 +21,20 @@ import static java.util.stream.Collectors.groupingBy;
 public class PathConsumer implements Runnable{
     private final BlockingQueue<Message> newQueue;
     private final BlockingQueue<Message> newOutgoing;
+    private final CharsetDecoder decoder;
 
     PathConsumer(BlockingQueue<Message> q, BlockingQueue<Message> out){
         newQueue = q;
         newOutgoing = out;
+        //specify decoder for line reader
+        //due to difficulty of
+        decoder = StandardCharsets.UTF_8.newDecoder()
+                .onMalformedInput(CodingErrorAction.REPLACE)
+                .onUnmappableCharacter(CodingErrorAction.REPLACE);
+
+
     }
+
 
     @Override
     public void run() {
@@ -30,7 +43,7 @@ public class PathConsumer implements Runnable{
                 consume(newQueue.take());
             }
         } catch (InterruptedException e) {
-            System.err.println(e);
+            e.printStackTrace();
         }
     }
 
@@ -38,16 +51,20 @@ public class PathConsumer implements Runnable{
     void consume(Message message) throws InterruptedException{
         if(!message.isPoison()){
             Map<String, Long> wordCount = new HashMap<>();
-            try{
-                //Regex s is a whitespace character, or a space, tab, carriage return, new line, vertical tab, or form feed
-                wordCount = Files.lines(message.getPath())
-                        .flatMap(line -> Arrays.stream(line.trim().split("\\s")))
+            //need to use a buffered reader rather than Files.lines() to override charset decoder
+            try(Reader reader = Channels.newReader(FileChannel.open(message.getPath()), decoder, -1);
+                BufferedReader bufferedReader = new BufferedReader(reader)) {
+                wordCount = bufferedReader.lines().flatMap(line -> Arrays.stream(line.trim().split("\\s")))
                         .map(word -> word.replaceAll("[^a-zA-Z]", "").toLowerCase(Locale.ROOT).trim())
                         .filter(word -> word.length() > 0)
                         .map(word -> new SimpleEntry<>(word, 1))
                         .collect(groupingBy(SimpleEntry::getKey, counting()));
+
+            } catch(MalformedInputException e){
+                //if this exception is thrown then *potentially* retry with different encoding
+                e.printStackTrace();
             } catch(IOException e){
-                System.err.println(e);
+                e.printStackTrace();
             }
 
             message.setText(wordCount);
@@ -58,4 +75,6 @@ public class PathConsumer implements Runnable{
             newOutgoing.put(message);
         }
     }
+
+
 }
