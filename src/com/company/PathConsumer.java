@@ -27,12 +27,10 @@ public class PathConsumer implements Runnable{
         newQueue = q;
         newOutgoing = out;
         //specify decoder for line reader
-        //due to difficulty of
+        //due to difficulty of parsing multi-encoded files
         decoder = StandardCharsets.UTF_8.newDecoder()
                 .onMalformedInput(CodingErrorAction.REPLACE)
                 .onUnmappableCharacter(CodingErrorAction.REPLACE);
-
-
     }
 
 
@@ -54,6 +52,7 @@ public class PathConsumer implements Runnable{
             //need to use a buffered reader rather than Files.lines() to override charset decoder
             try(Reader reader = Channels.newReader(FileChannel.open(message.getPath()), decoder, -1);
                 BufferedReader bufferedReader = new BufferedReader(reader)) {
+                //regex s matches a space, a tab, a line break, or a form feed
                 wordCount = bufferedReader.lines().flatMap(line -> Arrays.stream(line.trim().split("\\s")))
                         .map(word -> word.replaceAll("[^a-zA-Z]", "").toLowerCase(Locale.ROOT).trim())
                         .filter(word -> word.length() > 0)

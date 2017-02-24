@@ -22,9 +22,6 @@ public class Main {
             root = args[0];
         }
 
-
-
-
         PathProducer directoryWalker = new PathProducer(producerToConsumer, root);
         PathConsumer textAnalyzer = new PathConsumer(producerToConsumer, consumerToMerger);
         MapMerger mapMerger = new MapMerger(consumerToMerger);

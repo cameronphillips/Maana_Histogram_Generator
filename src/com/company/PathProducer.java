@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.function.BiPredicate;
@@ -30,9 +31,25 @@ public class PathProducer implements Runnable{
         //register shutdown hook to clean up temporary unzipped directories
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
-                toDelete.forEach((pathToDelete) -> pathToDelete.toFile().delete());
+                try{
+                    for(Path path : toDelete){
+                        deleteDirectory(path);
+                    }
+                }catch(IOException e){
+                    e.printStackTrace();
+                }
             }
         });
+    }
+
+    //called on shutdown to remove temporary directories
+    void deleteDirectory(Path tempDir) throws IOException{
+        //reverses list so directory is last to delete
+        //deletes all files within a directory
+        Files.walk(tempDir)
+                .sorted(Comparator.reverseOrder())
+                .map(Path::toFile)
+                .forEach(File::delete);
     }
 
     @Override
@@ -65,11 +82,11 @@ public class PathProducer implements Runnable{
                 shouldVisit)) {
             stream.forEach(this::handlePath);
         } catch (IOException e) {
-            System.err.println(e);
+            e.printStackTrace();
             //return false;
         } catch(UncheckedIOException e) {
             System.err.println("This program does not have permission to read this directory or file");
-            System.err.println(e);
+            e.printStackTrace();
         }
     }
 
@@ -78,7 +95,7 @@ public class PathProducer implements Runnable{
             try{
                 traverseTree(unzipFile(path));
             }catch(IOException e){
-                System.err.println(e);
+                e.printStackTrace();
             }
         }else if(path.toString().endsWith(".txt")){
             //insert into producer queue
@@ -112,7 +129,7 @@ public class PathProducer implements Runnable{
             System.err.println("File does not exist!");
             System.err.println(e);
         }catch(IOException e){
-            System.err.println(e);
+            e.printStackTrace();
         }
         toDelete.add(tDirect);
         return tDirect.toString();

@@ -1,6 +1,5 @@
 package com.company;
 
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -54,10 +53,6 @@ public class MapMerger implements Runnable{
 
     }
 
-     public Map<String, Long> getfinalMergedMap() {
-        return histogram;
-     }
-
      void shutdown(){
         //0 indicates normal shutdown
         System.exit(0);
@@ -65,7 +60,7 @@ public class MapMerger implements Runnable{
 
      void printHistogram(){
          //find the longest word in the histogram to properly pad output
-         int longestWord = histogram.entrySet().stream()
+         int longestWord = histogram.entrySet().parallelStream()
                  .map(entry -> entry.getKey().length())
                  .reduce(0, (a, b) -> Integer.max(a, b));
 
