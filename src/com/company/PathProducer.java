@@ -29,6 +29,7 @@ public class PathProducer implements Runnable{
     private final String root;
     private final List<Path> toDelete;
 
+    //only takes valid directory as input for path
     PathProducer(BlockingQueue q, String path){
         newQueue = q;
         root = path;
@@ -71,7 +72,7 @@ public class PathProducer implements Runnable{
         try{
             newQueue.put(message);
         }catch (InterruptedException e){
-            System.err.println(e);
+            e.printStackTrace();
         }
     }
 

@@ -1,7 +1,9 @@
 package com.company;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.SynchronousQueue;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Scanner;
+import java.util.concurrent.*;
 
 public class Main {
 
@@ -15,9 +17,21 @@ public class Main {
         //to be merged by MapMerger
         final BlockingQueue<Message> consumerToMerger = new SynchronousQueue<>();
 
-        //hard coded path for debugging and testing, otherwise takes a commandline argument
+        //can take commandline argument, or get path from user input
         if(args.length == 0){
-            root = "/Users/cameronphillips/Desktop/maana/";
+            System.out.println("Enter a directory path, and have all text files analyzed and output into a histogram");
+            Scanner scanner = new Scanner(System.in);
+            System.out.print("Enter a directory path: ");
+            String consoleInput = scanner.nextLine();
+
+            //sanitize input to pathproducer
+            while(!Files.exists(Paths.get(consoleInput)) || !Files.isDirectory(Paths.get(consoleInput)) || consoleInput.length() == 0){
+                System.out.println("Invalid directory, or does not exist on this file system.");
+                System.out.print("Enter a directory path: ");
+                consoleInput = scanner.nextLine();
+            }
+                root = consoleInput;
+            //root = "/Users/cameronphillips/Desktop/maana/";
         }else{
             root = args[0];
         }
@@ -25,6 +39,7 @@ public class Main {
         PathProducer directoryWalker = new PathProducer(producerToConsumer, root);
         PathConsumer textAnalyzer = new PathConsumer(producerToConsumer, consumerToMerger);
         MapMerger mapMerger = new MapMerger(consumerToMerger);
+
 
         new Thread(directoryWalker).start();
         new Thread(textAnalyzer).start();
