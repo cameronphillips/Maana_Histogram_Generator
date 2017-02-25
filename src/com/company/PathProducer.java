@@ -18,6 +18,12 @@ import java.util.zip.ZipInputStream;
 /**
  * Created by cameronphillips on 1/22/17.
  */
+//PathProducer -> PathConsumer -> MapMerger
+//takes a directory as a Path object
+//traverses the file tree searching for .txt files
+//if it encounters zips, unzips and traverses
+//places path objects as Messages in blockingqueue for pathconsumer
+//when done traversing, sends a poison message to indicate shutdown
 public class PathProducer implements Runnable{
     private final BlockingQueue<Message> newQueue;
     private final String root;
@@ -43,7 +49,7 @@ public class PathProducer implements Runnable{
     }
 
     //called on shutdown to remove temporary directories
-    void deleteDirectory(Path tempDir) throws IOException{
+    private void deleteDirectory(Path tempDir) throws IOException{
         //reverses list so directory is last to delete
         //deletes all files within a directory
         Files.walk(tempDir)

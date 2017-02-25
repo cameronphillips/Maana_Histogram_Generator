@@ -32,7 +32,7 @@ public class Message {
 
     private Map<String, Long> text;
 
-    public Message(boolean isPoison, Path path){
+    Message(boolean isPoison, Path path){
         this.path = path;
         this.isPoison = isPoison;
         this.text = null;

@@ -10,15 +10,18 @@ import java.util.stream.Stream;
 /**
  * Created by cameronphillips on 1/27/17.
  */
+//PathProducer -> PathConsumer -> MapMerger
+//takes messages from blockingqueue coming in from PathConsumer
+//merges wordcount map from each incoming message into a final
+//histogram representing the entire file tree passed to PathProducer
 public class MapMerger implements Runnable{
 
     private Map<String, Long> histogram;
     private final BlockingQueue<Message> incomingMaps;
-    public MapMerger(BlockingQueue<Message> inq){
+    MapMerger(BlockingQueue<Message> inq){
         histogram = new HashMap<>();
         incomingMaps = inq;
     }
-
 
     @Override
     public void run(){
@@ -31,10 +34,9 @@ public class MapMerger implements Runnable{
         }
     }
 
-    //takes maps from queue and merges them with running histogram map of all maps
+    //takes maps from queue and merges them with running "histogram" map of all maps
     private void consume (Message toBeMerged){
         if(!toBeMerged.isPoison()){
-
 
             histogram = Stream.concat(toBeMerged.getText().entrySet().stream(), histogram.entrySet().stream())
                     .collect(Collectors.toMap(
@@ -53,12 +55,12 @@ public class MapMerger implements Runnable{
 
     }
 
-     void shutdown(){
+     private void shutdown(){
         //0 indicates normal shutdown
         System.exit(0);
      }
 
-     void printHistogram(){
+     private void printHistogram(){
          //find the longest word in the histogram to properly pad output
          int longestWord = histogram.entrySet().parallelStream()
                  .map(entry -> entry.getKey().length())

@@ -18,6 +18,10 @@ import static java.util.stream.Collectors.groupingBy;
 /**
  * Created by cameronphillips on 1/22/17.
  */
+//PathProducer -> PathConsumer -> MapMerger
+//consumes messages from BlockingQueue containing paths to text files
+//builds a map of word counts in each text file, inserts into the message
+//passes the message into another BlockingQueue to MapMerger to build histogram
 public class PathConsumer implements Runnable{
     private final BlockingQueue<Message> newQueue;
     private final BlockingQueue<Message> newOutgoing;
@@ -46,7 +50,7 @@ public class PathConsumer implements Runnable{
     }
 
     //receives a path of a text file from the queue, extracts and counts all of the words within it
-    void consume(Message message) throws InterruptedException{
+    private void consume(Message message) throws InterruptedException{
         if(!message.isPoison()){
             Map<String, Long> wordCount = new HashMap<>();
             //need to use a buffered reader rather than Files.lines() to override charset decoder
