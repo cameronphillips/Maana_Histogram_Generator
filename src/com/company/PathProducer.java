@@ -30,6 +30,7 @@ public class PathProducer implements Runnable{
     private final List<Path> toDelete;
 
     //only takes valid directory as input for path
+    //
     PathProducer(BlockingQueue q, String path){
         newQueue = q;
         root = path;
